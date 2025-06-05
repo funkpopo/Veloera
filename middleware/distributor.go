@@ -79,6 +79,18 @@ func ResetChannelKeyIndex(channelId int) {
 	delete(channelKeysHash, channelId)
 }
 
+// RefreshPrefixChannelsCache refreshes prefix cache for one or multiple groups.
+// Groups should be a comma separated string, empty entries are ignored.
+func RefreshPrefixChannelsCache(groups string) {
+	for _, g := range strings.Split(groups, ",") {
+		g = strings.TrimSpace(g)
+		if g == "" {
+			continue
+		}
+		refreshPrefixChannelsCache(g)
+	}
+}
+
 // refreshPrefixChannelsCache refreshes the prefix channels cache for a given group
 func refreshPrefixChannelsCache(group string) map[string][]*model.Channel {
 	var channels []*model.Channel
@@ -394,7 +406,7 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("channel_id", channel.Id)
 	c.Set("channel_name", channel.Name)
 	c.Set("channel_type", channel.Type)
-c.Set("channel_create_time", channel.CreatedTime)
+	c.Set("channel_create_time", channel.CreatedTime)
 	c.Set("channel_setting", channel.GetSetting())
 	c.Set("param_override", channel.GetParamOverride())
 
