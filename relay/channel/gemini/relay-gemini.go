@@ -9,8 +9,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/gin-gonic/gin"
-
 	"veloera/common"
 	"veloera/constant"
 	"veloera/dto"
