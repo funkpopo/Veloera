@@ -239,66 +239,69 @@ func ListModels(c *gin.Context) {
 				}
 			}
 		}
-	} else {
-		models := model.GetGroupModels(group)
-		addedModels := make(map[string]bool)
+	} else { // modelLimitEnable is false
+		models := model.GetGroupModels(group) // Models available to the user's group
+		processedModels := make(map[string]bool) // Tracks models already added to userOpenAiModels to prevent duplicates
 
-		// First add all models with prefixes
-		for baseModel, prefixedModels := range modelPrefixMap {
-			// Check if the base model is in the allowed models for this group
-			isAllowed := false
+		// First, add all models from channels with prefixes
+		for baseModel, prefixedModelNameVersions := range modelPrefixMap {
+			isBaseModelAllowed := false
 			for _, groupModel := range models {
 				if groupModel == baseModel {
-					isAllowed = true
+					isBaseModelAllowed = true
 					break
 				}
 			}
 
-			if isAllowed {
-				// Add all prefixed versions of this model
-				for _, prefixedModel := range prefixedModels {
-					if _, ok := openAIModelsMap[baseModel]; ok {
-						modelInfo := openAIModelsMap[baseModel]
-						// Create a copy and replace ID with prefixed model
-						prefixedModelInfo := modelInfo
-						prefixedModelInfo.Id = prefixedModel
-						userOpenAiModels = append(userOpenAiModels, prefixedModelInfo)
+			if isBaseModelAllowed {
+				for _, prefixedModelName := range prefixedModelNameVersions {
+					if processedModels[prefixedModelName] {
+						continue // Skip if this specific prefixed model was already added
+					}
+					// Construct and add the prefixed model to userOpenAiModels
+					if modelData, ok := openAIModelsMap[baseModel]; ok { // Use baseModel for template
+						modelInfo := modelData // Make a copy to modify
+						modelInfo.Id = prefixedModelName
+						modelInfo.Root = baseModel // Ensure Root is the base model
+						userOpenAiModels = append(userOpenAiModels, modelInfo)
 					} else {
 						userOpenAiModels = append(userOpenAiModels, dto.OpenAIModels{
-							Id:         prefixedModel,
+							Id:         prefixedModelName,
 							Object:     "model",
 							Created:    1626777600,
-							OwnedBy:    "custom",
+							OwnedBy:    "custom", // Or derive from channel if possible
 							Permission: permission,
 							Root:       baseModel,
 							Parent:     nil,
 						})
 					}
+					processedModels[prefixedModelName] = true
 				}
-				addedModels[baseModel] = true
 			}
 		}
 
-		// Then add remaining models without prefixes
-		for _, s := range models {
-			// Skip if already added with a prefix
-			if addedModels[s] {
-				continue
+		// Second, add all models available to the group (including non-prefixed ones)
+		// that haven't been added yet.
+		for _, modelName := range models {
+			if processedModels[modelName] {
+				continue // Skip if this model (prefixed or non-prefixed) was already added
 			}
 
-			if _, ok := openAIModelsMap[s]; ok {
-				userOpenAiModels = append(userOpenAiModels, openAIModelsMap[s])
+			// Construct and add the non-prefixed model to userOpenAiModels
+			if modelData, ok := openAIModelsMap[modelName]; ok {
+				userOpenAiModels = append(userOpenAiModels, modelData)
 			} else {
 				userOpenAiModels = append(userOpenAiModels, dto.OpenAIModels{
-					Id:         s,
+					Id:         modelName,
 					Object:     "model",
 					Created:    1626777600,
-					OwnedBy:    "custom",
+					OwnedBy:    "custom", // Or derive from channel if possible
 					Permission: permission,
-					Root:       s,
+					Root:       modelName,
 					Parent:     nil,
 				})
 			}
+			processedModels[modelName] = true
 		}
 	}
 
