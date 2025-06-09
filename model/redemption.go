@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"veloera/common"
 
 	"gorm.io/gorm"
@@ -29,8 +30,8 @@ type Redemption struct {
 // RedemptionLog 记录礼品码的使用记录
 type RedemptionLog struct {
 	Id           int   `json:"id"`
-	RedemptionId int   `json:"redemption_id" gorm:"index"`
-	UserId       int   `json:"user_id" gorm:"index"`
+	RedemptionId int   `json:"redemption_id" gorm:"index;uniqueIndex:uniq_redemption_user"`
+	UserId       int   `json:"user_id" gorm:"index;uniqueIndex:uniq_redemption_user"`
 	UsedTime     int64 `json:"used_time" gorm:"bigint"`
 }
 
@@ -146,7 +147,7 @@ func Redeem(key string, userId int) (quota int, isGift bool, err error) {
 	}
 	common.RandomSleep()
 	err = DB.Transaction(func(tx *gorm.DB) error {
-		err := tx.Set("gorm:query_option", "FOR UPDATE").Where(keyCol+" = ?", key).First(redemption).Error
+		err := tx.Where(keyCol+" = ?", key).First(redemption).Error
 		if err != nil {
 			return errors.New("无效的兑换码")
 		}
@@ -160,9 +161,19 @@ func Redeem(key string, userId int) (quota int, isGift bool, err error) {
 			if err != nil {
 				return err
 			}
-			redemption.RedeemedTime = common.GetTimestamp()
-			redemption.Status = common.RedemptionCodeStatusUsed
-			redemption.UsedUserId = userId
+			update := tx.Model(&Redemption{}).
+				Where("id = ? AND status = ?", redemption.Id, common.RedemptionCodeStatusEnabled).
+				Updates(map[string]any{
+					"redeemed_time": common.GetTimestamp(),
+					"status":        common.RedemptionCodeStatusUsed,
+					"used_user_id":  userId,
+				})
+			if update.Error != nil {
+				return update.Error
+			}
+			if update.RowsAffected == 0 {
+				return errors.New("该兑换码已被使用")
+			}
 		} else {
 			// 礼品码逻辑
 			if redemption.MaxUses != -1 && redemption.UsedCount >= redemption.MaxUses {
@@ -190,17 +201,32 @@ func Redeem(key string, userId int) (quota int, isGift bool, err error) {
 				UsedTime:     common.GetTimestamp(),
 			}
 			if err = tx.Create(&log).Error; err != nil {
+				if strings.Contains(err.Error(), "uniq_redemption_user") {
+					return errors.New("您已经使用过这个礼品码")
+				}
 				return err
 			}
 
-			redemption.UsedCount++
-			if redemption.MaxUses != -1 && redemption.UsedCount >= redemption.MaxUses {
-				redemption.Status = common.RedemptionCodeStatusUsed
+			update := tx.Model(&Redemption{}).Where("id = ?", redemption.Id)
+			if redemption.MaxUses != -1 {
+				update = update.Where("used_count < ?", redemption.MaxUses)
+			}
+			update = update.Updates(map[string]any{
+				"used_count": gorm.Expr("used_count + 1"),
+			})
+			if update.Error != nil {
+				return update.Error
+			}
+			if redemption.MaxUses != -1 && update.RowsAffected == 0 {
+				return errors.New("该礼品码已达到最大使用次数")
+			}
+			if redemption.MaxUses != -1 && redemption.UsedCount+1 >= redemption.MaxUses {
+				if err = tx.Model(&Redemption{}).Where("id = ?", redemption.Id).Update("status", common.RedemptionCodeStatusUsed).Error; err != nil {
+					return err
+				}
 			}
 		}
-
-		err = tx.Save(redemption).Error
-		return err
+		return nil
 	})
 	if err != nil {
 		return 0, false, errors.New("兑换失败，" + err.Error())
