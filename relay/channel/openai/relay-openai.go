@@ -865,3 +865,66 @@ func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *dto.R
 	err := service.PreWssConsumeQuota(ctx, info, usage)
 	return err
 }
+
+func OpenaiPseudoStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
+	var simpleResponse dto.OpenAITextResponse
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = common.DecodeJson(responseBody, &simpleResponse)
+	if err != nil {
+		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+	}
+	if simpleResponse.Error != nil && simpleResponse.Error.Type != "" {
+		return &dto.OpenAIErrorWithStatusCode{
+			Error:      *simpleResponse.Error,
+			StatusCode: resp.StatusCode,
+		}, nil
+	}
+
+	if simpleResponse.Usage.TotalTokens == 0 || (simpleResponse.Usage.PromptTokens == 0 && simpleResponse.Usage.CompletionTokens == 0) {
+		completionTokens := 0
+		for _, choice := range simpleResponse.Choices {
+			ctkm, _ := service.CountTextToken(choice.Message.StringContent()+choice.Message.ReasoningContent+choice.Message.Reasoning, info.UpstreamModelName)
+			completionTokens += ctkm
+		}
+		simpleResponse.Usage = dto.Usage{
+			PromptTokens:     info.PromptTokens,
+			CompletionTokens: completionTokens,
+			TotalTokens:      info.PromptTokens + completionTokens,
+		}
+	}
+
+	helper.SetEventStreamHeaders(c)
+	info.SetFirstResponseTime()
+
+	// build a stream chunk from the full response
+	var streamResp dto.ChatCompletionsStreamResponse
+	streamResp.Id = simpleResponse.Id
+	streamResp.Object = "chat.completion.chunk"
+	streamResp.Created = simpleResponse.Created
+	streamResp.Model = simpleResponse.Model
+	streamResp.Choices = make([]dto.ChatCompletionsStreamResponseChoice, len(simpleResponse.Choices))
+	for i, ch := range simpleResponse.Choices {
+		var choice dto.ChatCompletionsStreamResponseChoice
+		choice.Index = ch.Index
+		finishReason := ch.FinishReason
+		choice.FinishReason = &finishReason
+		choice.Delta.Role = "assistant"
+		choice.Delta.SetContentString(ch.Message.StringContent())
+		streamResp.Choices[i] = choice
+	}
+
+	_ = helper.ObjectData(c, streamResp)
+	if info.ShouldIncludeUsage {
+		final := helper.GenerateFinalUsageResponse(helper.GetResponseID(c), common.GetTimestamp(), info.UpstreamModelName, simpleResponse.Usage)
+		_ = helper.ObjectData(c, final)
+	}
+	helper.Done(c)
+	return nil, &simpleResponse.Usage
+}

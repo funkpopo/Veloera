@@ -842,3 +842,68 @@ func GeminiEmbeddingHandler(c *gin.Context, resp *http.Response, info *relaycomm
 
 	return usage, nil
 }
+
+func GeminiChatPseudoStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+	}
+	var geminiResponse GeminiChatResponse
+	if err = json.Unmarshal(responseBody, &geminiResponse); err != nil {
+		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+	}
+	if len(geminiResponse.Candidates) == 0 {
+		return &dto.OpenAIErrorWithStatusCode{
+			Error: dto.OpenAIError{
+				Message: "No candidates returned",
+				Type:    "server_error",
+				Param:   "",
+				Code:    500,
+			},
+			StatusCode: resp.StatusCode,
+		}, nil
+	}
+	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse)
+	fullTextResponse.Model = info.UpstreamModelName
+	usage := &dto.Usage{
+		PromptTokens:     geminiResponse.UsageMetadata.PromptTokenCount,
+		CompletionTokens: geminiResponse.UsageMetadata.CandidatesTokenCount,
+		TotalTokens:      geminiResponse.UsageMetadata.TotalTokenCount,
+	}
+	if geminiResponse.UsageMetadata.ThoughtsTokenCount > 0 {
+		usage.CompletionTokenDetails.ReasoningTokens = geminiResponse.UsageMetadata.ThoughtsTokenCount
+	}
+	fullTextResponse.Usage = *usage
+
+	helper.SetEventStreamHeaders(c)
+	info.SetFirstResponseTime()
+
+	// build openai stream chunk
+	var streamResp dto.ChatCompletionsStreamResponse
+	streamResp.Id = fullTextResponse.Id
+	streamResp.Object = "chat.completion.chunk"
+	streamResp.Created = fullTextResponse.Created
+	streamResp.Model = fullTextResponse.Model
+	streamResp.Choices = make([]dto.ChatCompletionsStreamResponseChoice, len(fullTextResponse.Choices))
+	for i, ch := range fullTextResponse.Choices {
+		var choice dto.ChatCompletionsStreamResponseChoice
+		choice.Index = ch.Index
+		finishReason := ch.FinishReason
+		choice.FinishReason = &finishReason
+		choice.Delta.Role = "assistant"
+		choice.Delta.SetContentString(ch.Message.StringContent())
+		streamResp.Choices[i] = choice
+	}
+
+	_ = helper.ObjectData(c, streamResp)
+	if info.ShouldIncludeUsage {
+		final := helper.GenerateFinalUsageResponse(helper.GetResponseID(c), common.GetTimestamp(), info.UpstreamModelName, *usage)
+		_ = helper.ObjectData(c, final)
+	}
+	helper.Done(c)
+	return nil, usage
+}
