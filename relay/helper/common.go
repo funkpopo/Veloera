@@ -1,12 +1,16 @@
 package helper
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"net/http"
+
 	"veloera/common"
 	"veloera/dto"
 )
@@ -71,6 +75,29 @@ func PingData(c *gin.Context) error {
 		return errors.New("streaming error: flusher not found")
 	}
 	return nil
+}
+
+func WaitData(c *gin.Context) error {
+	c.Writer.Write([]byte(": WAITING FOR UPSTREAM \n\n"))
+	if flusher, ok := c.Writer.(http.Flusher); ok {
+		flusher.Flush()
+	} else {
+		return errors.New("streaming error: flusher not found")
+	}
+	return nil
+}
+
+func WaitHeartbeat(ctx context.Context, c *gin.Context) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			_ = WaitData(c)
+		}
+	}
 }
 
 func ObjectData(c *gin.Context, object interface{}) error {

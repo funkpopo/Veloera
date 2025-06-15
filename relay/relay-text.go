@@ -2,12 +2,14 @@ package relay
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"time"
 	"veloera/common"
@@ -81,6 +83,7 @@ func getAndValidateTextRequest(c *gin.Context, relayInfo *relaycommon.RelayInfo)
 func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 
 	relayInfo := relaycommon.GenRelayInfo(c)
+	originalStream := false
 
 	// get & validate textRequest 获取并验证文本请求
 	textRequest, err := getAndValidateTextRequest(c, relayInfo)
@@ -88,6 +91,8 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		common.LogError(c, fmt.Sprintf("getAndValidateTextRequest failed: %s", err.Error()))
 		return service.OpenAIErrorWrapperLocal(err, "invalid_text_request", http.StatusBadRequest)
 	}
+
+	originalStream = textRequest.Stream
 
 	if setting.ShouldCheckPromptSensitive() {
 		words, err := checkRequestSensitive(textRequest, relayInfo)
@@ -160,6 +165,19 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		return service.OpenAIErrorWrapperLocal(fmt.Errorf("invalid api type: %d", relayInfo.ApiType), "invalid_api_type", http.StatusBadRequest)
 	}
 	adaptor.Init(relayInfo)
+
+	streamSupport := ""
+	if val, ok := relayInfo.ChannelSetting[constant.ChannelSettingStreamSupport]; ok {
+		if s, ok2 := val.(string); ok2 {
+			streamSupport = strings.ToUpper(s)
+		}
+	}
+	fakeStream := streamSupport == constant.StreamSupportNonStreamOnly && originalStream
+	if fakeStream {
+		textRequest.Stream = false
+		relayInfo.IsStream = false
+	}
+
 	var requestBody io.Reader
 
 	if model_setting.GetGlobalSettings().PassThroughRequestEnabled {
@@ -201,7 +219,17 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 	}
 
 	var httpResp *http.Response
+	var hbCancel context.CancelFunc
+	if fakeStream {
+		helper.SetEventStreamHeaders(c)
+		var hbCtx context.Context
+		hbCtx, hbCancel = context.WithCancel(context.Background())
+		go helper.WaitHeartbeat(hbCtx, c)
+	}
 	resp, err := adaptor.DoRequest(c, relayInfo, requestBody)
+	if fakeStream && hbCancel != nil {
+		hbCancel()
+	}
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
@@ -219,11 +247,34 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		}
 	}
 
-	usage, openaiErr := adaptor.DoResponse(c, httpResp, relayInfo)
-	if openaiErr != nil {
-		// reset status code 重置状态码
-		service.ResetStatusCode(openaiErr, statusCodeMappingStr)
-		return openaiErr
+	var usage any
+	if fakeStream {
+		rec := httptest.NewRecorder()
+		fakeCtx := c.Copy()
+		fakeCtx.Writer = rec
+		usage, openaiErr = adaptor.DoResponse(fakeCtx, httpResp, relayInfo)
+		if openaiErr != nil {
+			service.ResetStatusCode(openaiErr, statusCodeMappingStr)
+			return openaiErr
+		}
+		var respObj dto.OpenAITextResponse
+		_ = json.Unmarshal(rec.Body.Bytes(), &respObj)
+		_ = helper.StringData(c, strings.TrimSpace(rec.Body.String()))
+		if relayInfo.ShouldIncludeUsage {
+			usageTyped := usage.(*dto.Usage)
+			respID := respObj.Id
+			createAt := respObj.Created
+			finalResp := helper.GenerateFinalUsageResponse(respID, createAt, respObj.Model, *usageTyped)
+			helper.ObjectData(c, finalResp)
+		}
+		helper.Done(c)
+	} else {
+		usage, openaiErr = adaptor.DoResponse(c, httpResp, relayInfo)
+		if openaiErr != nil {
+			// reset status code 重置状态码
+			service.ResetStatusCode(openaiErr, statusCodeMappingStr)
+			return openaiErr
+		}
 	}
 
 	if strings.HasPrefix(relayInfo.OriginModelName, "gpt-4o-audio") {

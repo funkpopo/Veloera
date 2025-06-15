@@ -13,18 +13,22 @@
 3. thinking_to_content
    - 用于标识是否将思考内容`reasoning_content`转换为`<think>`标签拼接到内容中返回
    - 类型为布尔值，设置为 true 时启用思考内容转换
+4. stream_support
+   - 控制向上游请求的流式方式，默认 `default`
+   - 设置为 `NON_STREAM_ONLY` 时，即使客户端请求流，也会向上游请求非流并在完成后以伪流方式返回
 
 --------------------------------------------------------------
 
 ## JSON 格式示例
 
-以下是一个示例配置，启用强制格式化并设置了代理地址：
+以下是一个示例配置，启用强制格式化并设置了代理地址，同时禁用上游流式响应：
 
 ```json
 {
     "force_format": true,
    "thinking_to_content": true,
-    "proxy": "socks5://xxxxxxx"
+    "proxy": "socks5://xxxxxxx",
+    "stream_support": "NON_STREAM_ONLY"
 }
 ```
 
