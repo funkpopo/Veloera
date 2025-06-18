@@ -30,7 +30,7 @@ export default function RedemptionPage() {
     setSuccess('');
     
     try {
-      const response = await api.post('/api/redemption', { code: code.trim() });
+      const response = await api.post('/api/user/topup', { key: code.trim() });
       
       if (response.success) {
         setSuccess(t('pricing.redemption.success'));

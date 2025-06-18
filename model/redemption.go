@@ -20,6 +20,8 @@ type Redemption struct {
 	Quota        int            `json:"quota" gorm:"default:100"`
 	CreatedTime  int64          `json:"created_time" gorm:"bigint"`
 	RedeemedTime int64          `json:"redeemed_time" gorm:"bigint"`
+	ValidFrom    int64          `json:"valid_from" gorm:"bigint;default:0"`    // 生效时间，0表示立即生效
+	ValidUntil   int64          `json:"valid_until" gorm:"bigint;default:0"`   // 过期时间，0表示永不过期
 	Count        int            `json:"count" gorm:"-:all"` // only for api request
 	UsedUserId   int            `json:"used_user_id"`
 	IsGift       bool           `json:"is_gift" gorm:"default:false"`
@@ -164,6 +166,15 @@ func Redeem(key string, userId int) (quota int, isGift bool, err error) {
 			return errors.New("无效的兑换码")
 		}
 
+		// 检查兑换码时间范围
+		currentTime := common.GetTimestamp()
+		if redemption.ValidFrom > 0 && currentTime < redemption.ValidFrom {
+			return errors.New("兑换码尚未生效")
+		}
+		if redemption.ValidUntil > 0 && currentTime > redemption.ValidUntil {
+			return errors.New("兑换码已过期")
+		}
+
 		if !redemption.IsGift {
 			// 普通兑换码逻辑
 			if redemption.Status != common.RedemptionCodeStatusEnabled {
@@ -247,7 +258,7 @@ func (redemption *Redemption) SelectUpdate() error {
 // Update Make sure your token's fields is completed, because this will update non-zero values
 func (redemption *Redemption) Update() error {
 	var err error
-	err = DB.Model(redemption).Select("name", "status", "quota", "redeemed_time").Updates(redemption).Error
+	err = DB.Model(redemption).Select("name", "status", "quota", "redeemed_time", "valid_from", "valid_until").Updates(redemption).Error
 	return err
 }
 

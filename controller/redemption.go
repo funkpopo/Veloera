@@ -115,6 +115,15 @@ func AddRedemption(c *gin.Context) {
 		return
 	}
 
+	// 验证时间范围
+	if redemption.ValidFrom > 0 && redemption.ValidUntil > 0 && redemption.ValidFrom >= redemption.ValidUntil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "生效时间必须早于过期时间",
+		})
+		return
+	}
+
 	var keys []string
 	if redemption.Key != "" {
 		// If key is provided, use it and check for duplicates
@@ -142,6 +151,8 @@ func AddRedemption(c *gin.Context) {
 			Quota:       redemption.Quota,
 			IsGift:      redemption.IsGift,
 			MaxUses:     redemption.MaxUses,
+			ValidFrom:   redemption.ValidFrom,
+			ValidUntil:  redemption.ValidUntil,
 		}
 		err = cleanRedemption.Insert()
 		if err != nil {
@@ -180,6 +191,8 @@ func AddRedemption(c *gin.Context) {
 				Quota:       redemption.Quota,
 				IsGift:      redemption.IsGift,
 				MaxUses:     redemption.MaxUses,
+				ValidFrom:   redemption.ValidFrom,
+				ValidUntil:  redemption.ValidUntil,
 			}
 			err = cleanRedemption.Insert()
 			if err != nil {
@@ -244,6 +257,8 @@ func UpdateRedemption(c *gin.Context) {
 		// If you add more fields, please also update redemption.Update()
 		cleanRedemption.Name = redemption.Name
 		cleanRedemption.Quota = redemption.Quota
+		cleanRedemption.ValidFrom = redemption.ValidFrom
+		cleanRedemption.ValidUntil = redemption.ValidUntil
 	}
 	err = cleanRedemption.Update()
 	if err != nil {

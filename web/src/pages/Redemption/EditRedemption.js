@@ -16,6 +16,7 @@ import {
 import {
   AutoComplete,
   Button,
+  DatePicker,
   Input,
   Modal,
   SideSheet,
@@ -39,11 +40,13 @@ const EditRedemption = (props) => {
     quota: 100000,
     count: 1,
     is_gift: false,
-    max_uses: -1  // -1 means unlimited
+    max_uses: -1,  // -1 means unlimited
+    valid_from: 0,  // 0 means immediately effective
+    valid_until: 0  // 0 means never expires
   };
   const [inputs, setInputs] = useState(originInputs);
   const [redemptionKey, setRedemptionKey] = useState(''); // New state for optional key
-  const { name, quota, count, is_gift, max_uses } = inputs;
+  const { name, quota, count, is_gift, max_uses, valid_from, valid_until } = inputs;
 
   const handleCancel = () => {
     props.handleClose();
@@ -80,11 +83,19 @@ const EditRedemption = (props) => {
     if (!isEdit && inputs.name === '') {
       name = renderQuota(quota);
     }
+    
+    // 验证时间范围
+    if (valid_from > 0 && valid_until > 0 && valid_from >= valid_until) {
+      showError(t('生效时间必须早于过期时间'));
+      return;
+    }
     setLoading(true);
     let localInputs = inputs;
     localInputs.count = parseInt(localInputs.count);
     localInputs.quota = parseInt(localInputs.quota);
-    localInputs.max_uses = parseInt(localInputs.max_uses); // Add this line
+    localInputs.max_uses = parseInt(localInputs.max_uses);
+    localInputs.valid_from = parseInt(localInputs.valid_from);
+    localInputs.valid_until = parseInt(localInputs.valid_until);
     localInputs.name = name;
     let res;
     if (isEdit) {
@@ -262,6 +273,34 @@ const EditRedemption = (props) => {
               />
             </>
           )}
+
+          <Divider />
+          <Typography.Text>{t('生效时间')}</Typography.Text>
+          <DatePicker
+            style={{ marginTop: 8, width: '100%' }}
+            type='dateTime'
+            placeholder={t('留空表示立即生效')}
+            value={valid_from > 0 ? new Date(valid_from * 1000) : null}
+            onChange={(date) => {
+              const timestamp = date ? Math.floor(date.getTime() / 1000) : 0;
+              handleInputChange('valid_from', timestamp);
+            }}
+            format='yyyy-MM-dd HH:mm:ss'
+          />
+
+          <Divider />
+          <Typography.Text>{t('过期时间')}</Typography.Text>
+          <DatePicker
+            style={{ marginTop: 8, width: '100%' }}
+            type='dateTime'
+            placeholder={t('留空表示永不过期')}
+            value={valid_until > 0 ? new Date(valid_until * 1000) : null}
+            onChange={(date) => {
+              const timestamp = date ? Math.floor(date.getTime() / 1000) : 0;
+              handleInputChange('valid_until', timestamp);
+            }}
+            format='yyyy-MM-dd HH:mm:ss'
+          />
         </Spin>
       </SideSheet>
     </>
