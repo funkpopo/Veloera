@@ -166,6 +166,7 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 	pseudoStream := textRequest.Stream && streamSupport == constant.StreamSupportNonStreamOnly
 	var stopHeartbeat func()
 	if pseudoStream {
+		textRequest.Stream = false
 		relayInfo.IsStream = false
 		helper.SetEventStreamHeaders(c)
 		relayInfo.SetFirstResponseTime()
