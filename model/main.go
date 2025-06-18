@@ -329,7 +329,7 @@ func migrateRedemptionTimeFields() error {
 	}
 	
 	if !hasValidUntil {
-		common.SysLog("添加 valid_until 字段")
+		common.SysLog("Add valid_until field")
 		if common.UsingMySQL {
 			DB.Exec("ALTER TABLE redemptions ADD COLUMN valid_until BIGINT DEFAULT 0 COMMENT 'Expiration time, 0 means never expire'")
 		} else if common.UsingPostgreSQL {
