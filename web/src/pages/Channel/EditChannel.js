@@ -103,12 +103,13 @@ const ModelSelector = ({ channelId, type, apiKey, baseUrl, isEdit, selectedModel
       let res;
 
       if (isEdit && channelId) {
-        // 如果在编辑模式且有channelId，但要使用当前表单中的值而不是已保存的渠道值
-        res = await API.post('/api/channel/fetch_models', {
-          base_url: baseUrl,
-          type: type,
-          key: apiKey.split(',')[0].trim(),
-        });
+        // 如果在编辑模式且有channelId，使用后端根据channelId获取已保存渠道的模型列表
+        // res = await API.post('/api/channel/fetch_models', {
+        //   base_url: baseUrl,
+        //   type: type,
+        //   key: apiKey.split(',')[0].trim(),
+        // });
+        res = await API.get(`/api/channel/fetch_models/${channelId}`);
       } else {
         // 如果在创建模式，使用提供的凭据
         if (!apiKey) {
@@ -1295,7 +1296,7 @@ const EditChannel = (props) => {
                 <Input
                   label={t('API地址')}
                   name="base_url"
-                  placeholder={t('此项可选，用于通过自定义API地址来进行 API 调用，末尾不要带/v1和/')}
+                  placeholder={t('此项可选，用于通过自定义API地址来进行 API 调用，末尾带 / 以不使用默认 /v1 前缀')}
                   onChange={(value) => {
                     handleInputChange('base_url', value);
                   }}

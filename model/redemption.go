@@ -323,6 +323,7 @@ func BatchDisableRedemptions(ids []int) (count int64, err error) {
 
 // DeleteDisabledRedemptions 删除所有已禁用的兑换码
 func DeleteDisabledRedemptions() (count int64, err error) {
-	result := DB.Where("status = ?", common.RedemptionCodeStatusDisabled).Delete(&Redemption{})
-	return result.RowsAffected, result.Error
+    // Delete both disabled and already used redemption codes
+    result := DB.Where("status IN ?", []int{common.RedemptionCodeStatusDisabled, common.RedemptionCodeStatusUsed}).Delete(&Redemption{})
+    return result.RowsAffected, result.Error
 }

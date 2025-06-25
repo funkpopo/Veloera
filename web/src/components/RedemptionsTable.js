@@ -357,7 +357,7 @@ const RedemptionsTable = () => {
   const deleteAllDisabledRedemptions = async () => {
     Modal.confirm({
       title: t('删除所有已禁用的兑换码'),
-      content: t('此操作将删除所有已禁用的兑换码，不可恢复，是否继续？'),
+      content: t('此操作将删除所有已禁用/已使用的兑换码，不可恢复，是否继续？'),
       okType: 'danger',
       onOk: async () => {
         setLoading(true);
