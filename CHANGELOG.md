@@ -6,6 +6,67 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased changes
 
+### Feature
+- implement error logging (#112) [`7e55b846`](https://github.com/Veloera/Veloera/commit/7e55b846)
+
+## v0.3.27.2 (2025-06-28)
+
+### Chore
+- switch project license to GPL v3 with additional terms and update related documentation and footer [`07715152`](https://github.com/Veloera/Veloera/commit/07715152)
+
+## v0.3.27.1 (2025-06-26)
+
+### Other
+- feature: dd token rate limit feature (#111) [`c956fd33`](https://github.com/Veloera/Veloera/commit/c956fd33)
+
+## v0.3.27 (2025-06-26)
+
+### Feature
+- add token rate limit [`4e50d162`](https://github.com/Veloera/Veloera/commit/4e50d162)
+
+### Bug Fixes
+- correct in-memory rate limiter key usage in token rate limit handler [`a885eb52`](https://github.com/Veloera/Veloera/commit/a885eb52)
+- fix username missing in check-in log (#109) [`199a7afb`](https://github.com/Veloera/Veloera/commit/199a7afb)
+- fetch saved model list via channelId in edit mode (#108) [`2a02e1a6`](https://github.com/Veloera/Veloera/commit/2a02e1a6)
+
+### Documentation
+- add sponsor section to README.md to acknowledge project supporters [`7e294f7e`](https://github.com/Veloera/Veloera/commit/7e294f7e)
+
+### Style
+- remove unused timeFormat constant in token-rate-limit.go [`185c0037`](https://github.com/Veloera/Veloera/commit/185c0037)
+
+### Refactor
+- 优化速率限制输入框的标签和布局结构 [`2241614b`](https://github.com/Veloera/Veloera/commit/2241614b)
+
+## v0.3.26 (2025-06-25)
+
+### Feature
+- implement conversation logging for gemini channel (#107) [`d6800a71`](https://github.com/Veloera/Veloera/commit/d6800a71)
+- support custom start&end date for redeem code (#97) [`8117f302`](https://github.com/Veloera/Veloera/commit/8117f302)
+
+### Bug Fixes
+- modify the API address input box prompt to require a trailing / to disable the default /v1 prefix [`52fcc290`](https://github.com/Veloera/Veloera/commit/52fcc290)
+- update confirmation message to include used redemptions in deletion prompt [`2bd1f3b5`](https://github.com/Veloera/Veloera/commit/2bd1f3b5)
+- delete both disabled and used redemption codes in batch cleanup [`f80e5780`](https://github.com/Veloera/Veloera/commit/f80e5780)
+- upgrade lucide-react from 0.503.0 to 0.511.0 (#101) [`89f42f13`](https://github.com/Veloera/Veloera/commit/89f42f13)
+- upgrade next from 15.3.1 to 15.3.3 (#102) [`7908b87d`](https://github.com/Veloera/Veloera/commit/7908b87d)
+
+## v0.3.25 (2025-06-15)
+
+### Feature
+- add stream_support pseudo streaming (#95) [`a5b82123`](https://github.com/Veloera/Veloera/commit/a5b82123)
+- add chat content log switch (#92) [`9a5dcb3c`](https://github.com/Veloera/Veloera/commit/9a5dcb3c)
+- block browser extension via global switch (#91) [`f8b51cda`](https://github.com/Veloera/Veloera/commit/f8b51cda)
+
+### Bug Fixes
+- disable stream flag if using pseudo stream mode [`bb08a4d4`](https://github.com/Veloera/Veloera/commit/bb08a4d4)
+- fix type in gemini pseudo stream (#96) [`e2c3689f`](https://github.com/Veloera/Veloera/commit/e2c3689f)
+
+### Documentation
+- add ko-fi link [`7f939052`](https://github.com/Veloera/Veloera/commit/7f939052)
+- 补充必选与可选项用于澄清 issue 提交要求 [`9143b84f`](https://github.com/Veloera/Veloera/commit/9143b84f)
+- :robot: changelog file generated [`dae1c898`](https://github.com/Veloera/Veloera/commit/dae1c898)
+
 ## v0.3.24 (2025-06-09)
 
 ### Bug Fixes

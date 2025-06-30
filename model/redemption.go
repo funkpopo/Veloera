@@ -149,16 +149,18 @@ func Redeem(key string, userId int) (quota int, isGift bool, err error) {
 		keyCol = `"key"`
 	}
 
-	lockKey := "rloc:" + key // Using a shorter prefix "rloc:" for brevity
-	locked, redisErr := common.RDB.SetNX(context.Background(), lockKey, "1", 10*time.Second).Result()
-	if redisErr != nil {
-		common.SysError("Redis lock acquisition error: " + redisErr.Error())
-		return 0, false, errors.New("系统暂时繁忙，请稍后再试") // System temporarily busy, please try again later
+	if common.RedisEnabled && common.RDB != nil {
+		lockKey := "rloc:" + key // Using a shorter prefix "rloc:" for brevity
+		locked, redisErr := common.RDB.SetNX(context.Background(), lockKey, "1", 10*time.Second).Result()
+		if redisErr != nil {
+			common.SysError("Redis lock acquisition error: " + redisErr.Error())
+			return 0, false, errors.New("系统暂时繁忙，请稍后再试") // System temporarily busy, please try again later
+		}
+		if !locked {
+			return 0, false, errors.New("操作过于频繁，请稍后再试") // Operation too frequent, please try again later
+		}
+		defer common.RDB.Del(context.Background(), lockKey)
 	}
-	if !locked {
-		return 0, false, errors.New("操作过于频繁，请稍后再试") // Operation too frequent, please try again later
-	}
-	defer common.RDB.Del(context.Background(), lockKey)
 
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		err := tx.Set("gorm:query_option", "FOR UPDATE").Where(keyCol+" = ?", key).First(redemption).Error

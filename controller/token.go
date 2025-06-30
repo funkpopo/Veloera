@@ -141,6 +141,10 @@ func AddToken(c *gin.Context) {
 		ExpiredTime:        token.ExpiredTime,
 		RemainQuota:        token.RemainQuota,
 		UnlimitedQuota:     token.UnlimitedQuota,
+		RateLimitEnabled:   token.RateLimitEnabled,
+		RateLimitPeriod:    token.RateLimitPeriod,
+		RateLimitCount:     token.RateLimitCount,
+		RateLimitSuccess:   token.RateLimitSuccess,
 		ModelLimitsEnabled: token.ModelLimitsEnabled,
 		ModelLimits:        token.ModelLimits,
 		AllowIps:           token.AllowIps,
@@ -230,6 +234,10 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.ExpiredTime = token.ExpiredTime
 		cleanToken.RemainQuota = token.RemainQuota
 		cleanToken.UnlimitedQuota = token.UnlimitedQuota
+		cleanToken.RateLimitEnabled = token.RateLimitEnabled
+		cleanToken.RateLimitPeriod = token.RateLimitPeriod
+		cleanToken.RateLimitCount = token.RateLimitCount
+		cleanToken.RateLimitSuccess = token.RateLimitSuccess
 		cleanToken.ModelLimitsEnabled = token.ModelLimitsEnabled
 		cleanToken.ModelLimits = token.ModelLimits
 		cleanToken.AllowIps = token.AllowIps

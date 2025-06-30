@@ -1,14 +1,8 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { useTranslation } from 'react-i18next';
-import { getFooterHTML, getSystemName } from '../helpers';
-import { Layout, Tooltip } from '@douyinfe/semi-ui';
-import { StyleContext } from '../context/Style/index.js';
+import React, { useEffect, useState } from 'react';
+import { getFooterHTML } from '../helpers';
 
 const FooterBar = () => {
-  const { t } = useTranslation();
-  const systemName = getSystemName();
   const [footer, setFooter] = useState(getFooterHTML());
-  const [styleState] = useContext(StyleContext);
   let remainCheckTimes = 5;
 
   const loadFooter = () => {
@@ -17,30 +11,6 @@ const FooterBar = () => {
       setFooter(footer_html);
     }
   };
-
-  const defaultFooter = (
-    <div className='custom-footer'>
-      <a
-        href='https://github.com/Veloera/Veloera'
-        target='_blank'
-        rel='noreferrer'
-      >
-        Veloera {import.meta.env.VITE_REACT_APP_VERSION}{' '}
-      </a>
-      {t('由')}{' '}
-      <a href='https://github.com/Veloera' target='_blank' rel='noreferrer'>
-        Neuroplexus
-      </a>{' '}
-      {t('开发，基于')}{' '}
-      <a
-        href='https://github.com/songquanpeng/one-api'
-        target='_blank'
-        rel='noreferrer'
-      >
-        One API
-      </a>
-    </div>
-  );
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -54,21 +24,37 @@ const FooterBar = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  const PoweredByBadge = (
+    <a href={`https://the.veloera.org/landing?utm_source=${window.location.hostname}&utm_campaign=footer_badage`} target='_blank' rel='noreferrer'>
+      <img src='/powered_by.svg' alt='Powered by Veloera' style={{ height: '30px', verticalAlign: 'middle' }} />
+    </a>
+  );
+
+  let content;
+  if (footer) {
+    const isMultiLine = footer.includes('<p') || footer.includes('<div') || footer.includes('<br');
+    if (isMultiLine) {
+      content = (
+        <>
+          <div className='custom-footer' dangerouslySetInnerHTML={{ __html: footer }}></div>
+          <div style={{ marginTop: '5px' }}>{PoweredByBadge}</div>
+        </>
+      );
+    } else {
+      content = (
+        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <div className='custom-footer' style={{display: 'inline-block'}} dangerouslySetInnerHTML={{ __html: footer }}></div>
+          {PoweredByBadge}
+        </div>
+      );
+    }
+  } else {
+    content = PoweredByBadge;
+  }
+
   return (
-    <div
-      style={{
-        textAlign: 'center',
-        paddingBottom: '5px',
-      }}
-    >
-      {footer ? (
-        <div
-          className='custom-footer'
-          dangerouslySetInnerHTML={{ __html: footer }}
-        ></div>
-      ) : (
-        defaultFooter
-      )}
+    <div style={{ textAlign: 'center', paddingBottom: '5px' }}>
+      {content}
     </div>
   );
 };

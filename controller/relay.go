@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net/http"
@@ -20,6 +18,9 @@ import (
 	"veloera/relay/helper"
 	"veloera/service"
 	"veloera/setting/model_setting"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 func relayHandler(c *gin.Context, relayMode int) *dto.OpenAIErrorWithStatusCode {
@@ -42,6 +43,26 @@ func relayHandler(c *gin.Context, relayMode int) *dto.OpenAIErrorWithStatusCode 
 	default:
 		err = relay.TextHelper(c)
 	}
+
+	if err != nil && common.LogErrorEnabled { // If error log is enabled
+		// 保存错误日志到mysql中
+		userId := c.GetInt("id")
+		tokenName := c.GetString("token_name")
+		modelName := c.GetString("original_model")
+		tokenId := c.GetInt("token_id")
+		userGroup := c.GetString("group")
+		channelId := c.GetInt("channel_id")
+		other := make(map[string]interface{})
+		other["error_type"] = err.Error.Type
+		other["error_code"] = err.Error.Code
+		other["status_code"] = err.StatusCode
+		other["channel_id"] = channelId
+		other["channel_name"] = c.GetString("channel_name")
+		other["channel_type"] = c.GetInt("channel_type")
+
+		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.Error.Message, tokenId, 0, false, userGroup, other)
+	}
+
 	return err
 }
 

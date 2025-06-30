@@ -5,13 +5,20 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/717a063ac5b8435cb78c8c3e71e6c5f3)](https://app.codacy.com/gh/Veloera/Veloera/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade) [![Go Report Card](https://goreportcard.com/badge/github.com/Veloera/Veloera)](https://goreportcard.com/report/github.com/Veloera/Veloera)
 [![License](https://img.shields.io/github/license/Veloera/Veloera)](https://github.com/Veloera/Veloera/blob/main/LICENSE) [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Veloera/Veloera)](https://github.com/Veloera/Veloera/releases)
   
-[![GitHub stars](https://img.shields.io/github/stars/Veloera/Veloera?style=social)](https://github.com/Veloera/Veloera/stargazers) [![Build Status](https://github.com/Veloera/Veloera/actions/workflows/docker.yml/badge.svg)](https://github.com/Veloera/Veloera/actions/workflows/docker.yml) [![Build Status](https://github.com/Veloera/Veloera/actions/workflows/release.yml/badge.svg)](https://github.com/Veloera/Veloera/actions/workflows/release.yml)
+[![GitHub stars](https://img.shields.io/github/stars/Veloera/Veloera?style=social)](https://github.com/Veloera/Veloera/stargazers) [![Build Status](https://github.com/Veloera/Veloera/actions/workflows/docker.yml/badge.svg)](https://github.com/Veloera/Veloera/actions/workflows/docker.yml) [![Build Status](https://github.com/Veloera/Veloera/actions/workflows/release.yml/badge.svg)](https://github.com/Veloera/Veloera/actions/workflows/release.yml)  
+
+<a href="https://opencollective.com/veloeraorg/donate" target="_blank">
+  <img src="https://opencollective.com/veloeraorg/donate/button.png?color=blue" width=200 />
+</a>
 
 
 优秀的 AI API 网关系统
 
-原汁原味的 New API 体验, 对界面无大改动, 遵循 Apache 2.0 协议, 无商用限制, 承诺不变质.  
+原汁原味的 New API 体验, 对界面无大改动, 遵循 GPL 3.0 协议, 无商用限制, 承诺不变质.  
 添加极多原版不计划添加的特性. 以下只是部分.  
+
+> [!IMPORTANT]  
+> 我们近期更新了许可证, 查看整个 README 以了解详情
 
 ## 特性
 
@@ -80,6 +87,66 @@ docker-compose up -d
 - `AZURE_DEFAULT_API_VERSION`：Azure 渠道默认 API 版本，默认 `2024-12-01-preview`
 - `NOTIFICATION_LIMIT_DURATION_MINUTE`：通知限制持续时间，默认 `10`分钟
 - `NOTIFY_LIMIT_COUNT`：用户通知在指定持续时间内的最大数量，默认 `2`
+
+## 赞助商
+
+感谢这些厂商对 Veloera 的支持:  
+
+<a href="https://edgeone.ai/?from=github" target="_blank">
+  <img src="https://edgeone.ai/_next/static/media/headLogo.daeb48ad.png?auto=format&fit=max&w=200" width=200 />
+</a>
+<br />CDN acceleration and security protection for this project are sponsored by Tencent EdgeOne.
+
+<br />
+
+成为赞助者:  
+<a href="https://opencollective.com/veloeraorg/donate" target="_blank">
+  <img src="https://opencollective.com/veloeraorg/donate/button.png?color=blue" width=200 />
+</a>
+
+## ⚠️ 法律声明（Legal Notice）
+
+> [!TIP]
+> **TL;DR**  
+> - 如果你是普通用户:  
+>   此更新没有任何影响. 我们会为您处理好合规.  
+> - 如果你在运行二开版本:  
+>   这是一个重要更新, 如果您希望合规运行 `v0.2.27.1` 以上版本(不含), 则请仔细阅读以下更新. 
+>  
+> **更新概要**  
+> 若您以任何形式使用、修改或分发本项目，**除遵循 GPL v3 外，还需遵守以下补充条款**：  
+>  
+> 1. **不得移除或遮盖**所有页面页脚或“关于”页面中的 `Powered by Veloera` 标识。  
+> 2. **必须保留**项目根目录下的 `VELOERA_PROJ` 文件，且**不得修改内容**。  
+> 3. **不得更改或移除** `/veloera` 路由及其功能行为。
+> 
+> > 本部分仅用于信息说明，不构成法律意见。如您对许可条款存在疑问或面临合规要求，强烈建议咨询法律专业人士。
+
+自 `v0.3.27.2` 起，本项目更改为 **GPL v3 许可证**，并附加了额外使用条款。详见本文档下方“许可证”部分。  
+
+本项目基于 `new-api` 项目，原始许可证 *Apache License 2.0* 已保留于 `new-api-stuffs/LICENSE.new-api`，截至 fork 时原项目未包含 NOTICE 文件，故无需保留。
+
+截至 commit `c956fd3`（含该提交），项目仍遵循 **Apache 2.0 许可证**，附加条款**不适用**。  
+
+本声明仅用于信息说明，**不构成法律建议**。如有法律合规方面疑问，请咨询专业律师。  
+
+## 许可证
+
+本项目自版本 `v0.3.27.2` 起，采用 **GNU 通用公共许可证第 3 版（GPL v3）** 授权，并附加以下补充条款：
+
+### 附加条款（Additional Terms）：
+
+除非事先获得书面授权，您在使用、修改、分发本项目时，**必须同时遵守以下附加要求**：
+
+1. **不得移除或遮盖**所有页面页脚或“关于”页面中的 `Powered by Veloera` 徽标或文字标识。
+2. **必须保留**项目根目录下的 `VELOERA_PROJ` 文件，且不得修改其内容。
+3. **必须保留**并不得修改 `/veloera` 路由路径及其对应的页面行为。
+
+这些附加条款依照 GPL v3 第 7 节的规定添加，并构成本项目许可证的组成部分。
+
+截至 commit `c956fd3`（含），本项目代码仍遵循 Apache License 2.0，附加条款不适用。详情请参阅历史版本与 [LICENSE 文件](./LICENSE)。
+
+> ⚠️ 本声明不构成法律建议。如您对许可证条款有任何疑问，请咨询专业法律顾问。
 
 ## 🌟 Star History
 

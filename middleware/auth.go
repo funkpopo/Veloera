@@ -228,6 +228,10 @@ func TokenAuth() func(c *gin.Context) {
 		if !token.UnlimitedQuota {
 			c.Set("token_quota", token.RemainQuota)
 		}
+		c.Set("token_rate_limit_enabled", token.RateLimitEnabled)
+		c.Set("token_rate_limit_period", token.RateLimitPeriod)
+		c.Set("token_rate_limit_count", token.RateLimitCount)
+		c.Set("token_rate_limit_success", token.RateLimitSuccess)
 		if token.ModelLimitsEnabled {
 			c.Set("token_model_limit_enabled", true)
 			c.Set("token_model_limit", token.GetModelLimitsMap())
